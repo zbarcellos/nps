@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Ícone da página (Favicon) -->
+    <link rel="icon" type="image/png" href="https://img.lovepik.com/png/20231116/bbq-ribs-vector-sticker-cartoon_604604_wh860.png">
+    <title>Placar de NPS - Missão Excelência</title>
+    <!-- Carrega o Tailwind CSS para estilização --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Usa a fonte Inter para um visual moderno --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Define a fonte Inter como padrão */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1b2a; /* Azul escuro da imagem */
+            color: #e0e1dd; /* Texto claro */
+        }
+        /* Estilo customizado para a cor do placar NPS */
+        .nps-score {
+            font-weight: 800; /* Mais bold para destaque */
+            font-size: 3.75rem; /* text-6xl */
+            line-height: 1;
+        }
+        /* Ajuste para cards de fundo escuro */
+        .card-bg {
+            background-color: #1b263b; /* Azul um pouco mais claro que o fundo */
+            border-color: #415a77; /* Borda sutil */
+        }
+        /* Cores de destaque para NPS */
+        .nps-positive {
+            color: #6fffe9; /* Azul ciano claro */
+        }
+        .nps-neutral {
+            color: #e0e1dd; /* Cinza claro */
+        }
+        .nps-negative {
+            color: #ef4444; /* Vermelho mais vibrante */
+        }
+        /* Barra de progresso (opcional, se quisermos adicionar) */
+        .progress-bar {
+            background-color: #0d1b2a;
+            border-radius: 9999px; /* rounded-full */
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #ff8c00; /* Laranja da imagem */
+            border-radius: 9999px;
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-12 text-center md:text-left">
+            <h1 class="text-5xl font-extrabold text-[#6fffe9] mb-2">Missão: Excelência no Atendimento</h1>
+            <p class="text-xl text-[#a2a3bb]">Placar de NPS: Suas notas, suas recompensas!</p>
+            
+            <!-- Barra de Progresso NPS (Conectada ao NPS Total) --><div class="mt-10 flex items-center gap-4">
+                <span class="text-xl font-bold whitespace-nowrap">NPS Atual:</span>
+                <div class="progress-bar w-full h-8 relative">
+                    <div id="progress-fill" class="progress-fill absolute left-0 top-0 flex items-center justify-center text-sm font-bold text-[#0d1b2a]" style="width: 0%;">
+                        <span id="nps-progress-value">50</span>
+                    </div>
+                    <!-- Marcador da Meta (76 NPS). Posição = (76 + 100) / 2 = 88% --><div class="absolute top-0 bottom-0" style="left: 88%;">
+                        <div class="w-1 h-full bg-yellow-300 opacity-90 rounded-full"></div>
+                        <div class="absolute top-full mt-1 -translate-x-1/2 text-xs font-bold text-yellow-300">🎯 Meta: 76</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Seção de Filtros --><section class="card-bg p-6 rounded-2xl shadow-lg mb-8 border border-[#415a77]">
+            <h2 class="text-2xl font-bold text-[#6fffe9] mb-4">Filtros</h2>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                <div class="md:col-span-2">
+                    <label for="analyst-filter" class="block text-sm font-medium text-[#a2a3bb] mb-1">Filtrar por Analista</label>
+                    <select id="analyst-filter" class="w-full p-2.5 rounded-md bg-[#0d1b2a] border border-[#415a77] focus:ring-2 focus:ring-[#6fffe9] focus:outline-none">
+                        <!-- Opções de analistas serão inseridas aqui -->
+                    </select>
+                </div>
+                <div>
+                    <label for="start-date-filter" class="block text-sm font-medium text-[#a2a3bb] mb-1">Data de Início</label>
+                    <input type="date" id="start-date-filter" class="w-full p-2 rounded-md bg-[#0d1b2a] border border-[#415a77] focus:ring-2 focus:ring-[#6fffe9] focus:outline-none">
+                </div>
+                <div>
+                    <label for="end-date-filter" class="block text-sm font-medium text-[#a2a3bb] mb-1">Data de Fim</label>
+                    <input type="date" id="end-date-filter" class="w-full p-2 rounded-md bg-[#0d1b2a] border border-[#415a77] focus:ring-2 focus:ring-[#6fffe9] focus:outline-none">
+                </div>
+                <button id="clear-filters-btn" class="w-full bg-gray-500 text-white font-bold py-2 px-4 rounded-md hover:bg-opacity-80 transition-colors">Limpar Filtros</button>
+            </div>
+        </section>
+
+        <!-- Seção de Placares Principais --><section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Card NPS Total --><div class="card-bg p-6 rounded-2xl shadow-lg border text-center border-[#415a77]">
+                <h2 class="text-lg font-semibold text-[#a2a3bb] mb-2">NPS GERAL</h2>
+                <p id="nps-total" class="nps-score text-[#6fffe9]">0</p>
+                <span id="nps-total-count" class="text-sm text-[#a2a3bb]">(0 avaliações)</span>
+            </div>
+            <!-- Card NPS Telefonia --><div class="card-bg p-6 rounded-2xl shadow-lg border text-center border-[#415a77]">
+                <h2 class="text-lg font-semibold text-[#a2a3bb] mb-2">NPS TELEFONIA</h2>
+                <p id="nps-telefonia" class="nps-score text-[#6fffe9]">0</p>
+                <span id="nps-telefonia-count" class="text-sm text-[#a2a3bb]">(0 avaliações)</span>
+            </div>
+            <!-- Card NPS Chat --><div class="card-bg p-6 rounded-2xl shadow-lg border text-center border-[#415a77]">
+                <h2 class="text-lg font-semibold text-[#a2a3bb] mb-2">NPS CHAT</h2>
+                <p id="nps-chat" class="nps-score text-[#6fffe9]">0</p>
+                <span id="nps-chat-count" class="text-sm text-[#a2a3bb]">(0 avaliações)</span>
+            </div>
+        </section>
+
+        <!-- Seção de NPS por Analista --><section class="card-bg p-6 rounded-2xl shadow-lg mb-8 border border-[#415a77]">
+            <h2 class="text-2xl font-bold text-[#6fffe9] mb-6">Desempenho por Analista</h2>
+            <div id="analyst-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+                <!-- Cards de analistas serão inseridos aqui pelo JavaScript --></div>
+        </section>
+
+    </div>
+
+    <script type="module">
+        // --- 1. CONFIGURAÇÃO DO GOOGLE SHEETS ---
+        // Cole aqui a URL do seu Google Sheet publicado como CSV.
+        const googleSheetCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRlsnN30rzBX4cuuise7cTmBZ4rmxkvdCXRMSHgycrjLJyMaBz9kVAV67jh9-kAXg/pub?gid=468010349&single=true&output=csv';
+
+        let listaDeAnalistas = [];
+
+        // --- Variável de estado para os dados (para adição via console) ---
+        let dadosPesquisaAtuais = [];
+
+
+        // --- ELEMENTOS DO DOM ---
+        const npsTotalEl = document.getElementById('nps-total');
+        const npsTotalCountEl = document.getElementById('nps-total-count');
+        const npsTelefoniaEl = document.getElementById('nps-telefonia');
+        const npsTelefoniaCountEl = document.getElementById('nps-telefonia-count');
+        const npsChatEl = document.getElementById('nps-chat');
+        const npsChatCountEl = document.getElementById('nps-chat-count');
+        const analystListEl = document.getElementById('analyst-list');
+        const progressFill = document.getElementById('progress-fill');
+        const npsProgressValue = document.getElementById('nps-progress-value');
+        const analystFilterEl = document.getElementById('analyst-filter');
+        const startDateFilterEl = document.getElementById('start-date-filter');
+        const endDateFilterEl = document.getElementById('end-date-filter');
+        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+
+
+        // --- FUNÇÕES DE CÁLCULO ---
+
+        /**
+         * Busca e processa os dados do Google Sheet.
+         * @param {string} url - A URL do CSV publicado.
+         * @returns {Promise<Array>} - Uma promessa que resolve para a lista de avaliações.
+         */
+        async function fetchDataFromSheet(url) {
+            if (!url || url === 'PASTE_YOUR_GOOGLE_SHEET_CSV_URL_HERE') {
+                document.body.innerHTML = `<div class="text-center p-10"><h1 class="text-2xl text-red-400">Erro de Configuração</h1><p class="mt-2 text-lg">Por favor, cole a URL do seu Google Sheet publicado na variável 'googleSheetCsvUrl' no código HTML.</p></div>`;
+                throw new Error("URL do Google Sheet não configurada.");
+            }
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`A requisição falhou: ${response.statusText}`);
+                
+                const csvText = await response.text();
+                return parseCSV(csvText);
+            } catch (error) {
+                document.body.innerHTML = `<div class="text-center p-10"><h1 class="text-2xl text-red-400">Falha ao Carregar Dados</h1><p class="mt-2 text-lg">Não foi possível buscar os dados do Google Sheet. Verifique a URL e se a planilha está publicada corretamente.</p><p class="mt-4 text-sm text-gray-400">Erro: ${error.message}</p></div>`;
+                throw error;
+            }
+        }
+
+        /**
+         * Converte texto CSV em um array de objetos de avaliação.
+         * @param {string} text - O conteúdo do arquivo CSV.
+         * @returns {Array}
+         */
+        function parseCSV(text) {
+            const lines = text.trim().split(/\r?\n/);
+            const headers = lines.shift().split(',').map(h => h.trim());
+            
+            // Mapeia os cabeçalhos esperados para seus índices
+            const headerMap = {
+                analyst: headers.indexOf('analyst'),
+                channel: headers.indexOf('channel'),
+                score: headers.indexOf('score'),
+                date: headers.indexOf('date'),
+            };
+
+            if (Object.values(headerMap).some(index => index === -1)) {
+                throw new Error("O CSV não contém os cabeçalhos esperados: 'analyst', 'channel', 'score', 'date'.");
+            }
+
+            return lines.map(line => {
+                const values = line.split(',');
+                return {
+                    analyst: values[headerMap.analyst]?.trim(),
+                    channel: values[headerMap.channel]?.trim(),
+                    score: parseInt(values[headerMap.score]?.trim(), 10),
+                    date: values[headerMap.date]?.trim(),
+                };
+            }).filter(item => item.analyst && !isNaN(item.score)); // Filtra linhas vazias ou inválidas
+        }
+
+        /**
+         * Calcula a média das notas e a expressa como uma porcentagem de 0 a 100.
+         * @param {number[]} scores - Uma lista de notas (ex: [9, 10, 5, 7])
+         * @returns {number} - A média como percentual (ex: 85 para uma média de 8.5)
+         */
+        function calcularMediaPercentual(scores) {
+            if (scores.length === 0) {
+                return 0;
+            }
+            const soma = scores.reduce((acc, score) => acc + score, 0);
+            const media = soma / scores.length;
+            // Converte a média (0-10) para uma porcentagem (0-100)
+            return Math.round(media * 10);
+        }
+
+        /**
+         * Calcula o NPS a partir de uma lista de notas.
+         * @param {number[]} scores - Uma lista de notas (ex: [9, 10, 5, 7])
+         * @returns {number} - O valor do NPS (de -100 a 100)
+         */
+        function calcularNPS(scores) {
+            if (scores.length === 0) {
+                return 0; // Evita divisão por zero
+            }
+
+            const total = scores.length;
+            const promotores = scores.filter(s => s >= 9).length;
+            const detratores = scores.filter(s => s <= 6).length;
+
+            const nps = ((promotores - detratores) / total) * 100;
+            return Math.round(nps); // Arredonda para o inteiro mais próximo
+        }
+
+        /**
+         * Retorna a classe de cor com base na nota NPS, adaptado ao tema escuro.
+         * @param {number} nps - O valor do NPS
+         * @returns {string} - Classes de cor do Tailwind CSS
+         */
+        function getCorNPS(nps) {
+            if (nps >= 75) {
+                return 'nps-positive'; // Azul ciano claro (excelente)
+            } else if (nps >= 50) {
+                return 'text-green-400'; // Verde mais suave
+            } else if (nps >= 0) {
+                return 'nps-neutral'; // Cinza claro (neutro/razoável)
+            } else {
+                return 'nps-negative'; // Vermelho (negativo)
+            }
+        }
+
+        /**
+         * Retorna a classe de cor com base na média percentual.
+         * @param {number} percentual - O valor da média (0 a 100)
+         * @returns {string} - Classes de cor do Tailwind CSS
+         */
+        function getCorPercentual(percentual) {
+            if (percentual >= 90) {
+                return 'nps-positive'; // Azul ciano claro (excelente)
+            } else if (percentual >= 80) {
+                return 'text-green-400'; // Verde mais suave
+            } else if (percentual >= 70) {
+                return 'nps-neutral'; // Cinza claro (neutro/razoável)
+            } else {
+                return 'nps-negative'; // Vermelho (negativo)
+            }
+        }
+
+        /**
+         * Atualiza todo o painel com base nos 'dadosPesquisa'.
+         * @param {Array} dadosPesquisa - O array de avaliações.
+         */
+        function atualizarPainel(dadosPesquisa) {
+            // 1. Calcular NPS Total
+            const todasNotas = dadosPesquisa.map(d => d.score);
+            const npsTotal = calcularNPS(todasNotas);
+            npsTotalEl.textContent = npsTotal;
+            npsTotalEl.className = `nps-score ${getCorNPS(npsTotal)}`;
+            npsTotalCountEl.textContent = `(${todasNotas.length} avaliações)`;
+
+            // Atualiza a barra de progresso (NPS de -100 a 100, mapeado para 0 a 100%)
+            const progress = Math.max(0, Math.min(100, (npsTotal + 100) / 2));
+            progressFill.style.width = `${progress}%`;
+            npsProgressValue.textContent = npsTotal;
+            if (progress > 50) {
+                npsProgressValue.classList.remove('text-[#0d1b2a]');
+                npsProgressValue.classList.add('text-white'); // Cor de texto clara para contraste
+            } else {
+                 npsProgressValue.classList.remove('text-white');
+                 npsProgressValue.classList.add('text-[#0d1b2a]');
+            }
+
+            // 2. Calcular NPS Telefonia
+            const notasTelefonia = dadosPesquisa
+                .filter(d => d.channel === 'Telefonia')
+                .map(d => d.score);
+            const npsTelefonia = calcularNPS(notasTelefonia);
+            npsTelefoniaEl.textContent = npsTelefonia;
+            npsTelefoniaEl.className = `nps-score ${getCorNPS(npsTelefonia)}`;
+            npsTelefoniaCountEl.textContent = `(${notasTelefonia.length} avaliações)`;
+
+            // 3. Calcular NPS Chat
+            const notasChat = dadosPesquisa
+                .filter(d => d.channel === 'Chat')
+                .map(d => d.score);
+            const npsChat = calcularNPS(notasChat);
+            npsChatEl.textContent = npsChat;
+            npsChatEl.className = `nps-score ${getCorNPS(npsChat)}`;
+            npsChatCountEl.textContent = `(${notasChat.length} avaliações)`;
+
+            // 4. Calcular NPS por Analista
+            analystListEl.innerHTML = ''; // Limpa a lista atual
+            listaDeAnalistas.forEach(analista => {
+                
+                // --- Cálculos Gerais do Analista ---
+                const notasAnalista = dadosPesquisa
+                    .filter(d => d.analyst === analista)
+                    .map(d => d.score);
+                const npsAnalista = calcularNPS(notasAnalista);
+                const corAnalista = getCorNPS(npsAnalista);
+                const promotores = notasAnalista.filter(s => s >= 9).length;
+                const passivos = notasAnalista.filter(s => s >= 7 && s <= 8).length;
+                const detratores = notasAnalista.filter(s => s <= 6).length;
+
+                // --- Cálculos Específicos por Canal ---
+                const notasTelefoniaAnalista = dadosPesquisa
+                    .filter(d => d.analyst === analista && d.channel === 'Telefonia')
+                    .map(d => d.score);
+                const npsTelefoniaAnalista = calcularNPS(notasTelefoniaAnalista);
+                const corTelefoniaAnalista = getCorNPS(npsTelefoniaAnalista);
+
+                const notasChatAnalista = dadosPesquisa
+                    .filter(d => d.analyst === analista && d.channel === 'Chat')
+                    .map(d => d.score);
+                const npsChatAnalista = calcularNPS(notasChatAnalista);
+                const corChatAnalista = getCorNPS(npsChatAnalista);
+
+
+                // --- Cria o card do analista (Layout Atualizado) ---
+                const cardHTML = `
+                    <div class="card-bg border border-[#415a77] rounded-lg p-5 shadow-sm transition-all hover:shadow-md flex flex-col">
+                        <!-- Cabeçalho com Nome e NPS Geral --><div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl font-semibold text-[#6fffe9]">${analista}</h3>
+                            <div class="text-right">
+                                <span class="text-3xl font-bold ${corAnalista}">${npsAnalista}</span>
+                                <p class="text-sm text-[#a2a3bb]">Geral (${notasAnalista.length})</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Divisor --><hr class="my-3 border-t border-[#415a77]">
+
+                        <!-- Notas por Canal --><div class="grid grid-cols-2 gap-4 mb-4">
+                            <div class="text-center">
+                                <span class="text-2xl font-bold ${corTelefoniaAnalista}">${npsTelefoniaAnalista}</span>
+                                <p class="text-sm text-[#a2a3bb]">Telefonia (${notasTelefoniaAnalista.length})</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="text-2xl font-bold ${corChatAnalista}">${npsChatAnalista}</span>
+                                <p class="text-sm text-[#a2a3bb]">Chat (${notasChatAnalista.length})</p>
+                            </div>
+                        </div>
+
+                        <!-- Detalhes Gerais (mt-auto empurra para baixo) --><div class="space-y-1 text-sm mt-auto">
+                            <h4 class="font-semibold text-[#a2a3bb] mb-2">Detalhes (Geral)</h4>
+                            <div class="flex justify-between">
+                                <span class="text-green-400">Promotores (9-10)</span>
+                                <span class="font-medium">${promotores}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-yellow-400">Passivos (7-8)</span>
+                                <span class="font-medium">${passivos}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-red-400">Detratores (0-6)</span>
+                                <span class="font-medium">${detratores}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                analystListEl.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        // --- FUNÇÃO PARA ADIÇÃO VIA CONSOLE ---
+
+        /**
+         * Adiciona uma nova avaliação e atualiza o painel.
+         * Esta função é exposta globalmente como 'window.adicionarNota'.
+         * @param {string} analista - Nome do analista (deve existir em 'listaDeAnalistas')
+         * @param {string} canal - 'Telefonia' ou 'Chat'
+         * @param {number} nota - Um número de 0 a 10.
+         * @param {string} [data] - A data da avaliação no formato 'AAAA-MM-DD'. Se omitido, usa a data atual.
+         */
+        function adicionarNota(analista, canal, nota, data) {
+            // Validações
+            if (!listaDeAnalistas.includes(analista)) {
+                console.warn(`AVISO: Analista "${analista}" não está na 'listaDeAnalistas'. A nota será adicionada, mas o card do analista não será criado se ele não estiver na lista.`);
+            }
+            if (canal !== 'Telefonia' && canal !== 'Chat') {
+                console.error(`ERRO: Canal "${canal}" é inválido. Use "Telefonia" ou "Chat".`);
+                return;
+            }
+            if (nota < 0 || nota > 10 || isNaN(parseInt(nota))) {
+                console.error(`ERRO: Nota "${nota}" é inválida. Use um número de 0 a 10.`);
+                return;
+            }
+
+            // Se a data não for fornecida, usa a data de hoje no formato AAAA-MM-DD
+            const dataAvaliacao = data || new Date().toISOString().split('T')[0];
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(dataAvaliacao)) {
+                console.error(`ERRO: Formato de data "${dataAvaliacao}" é inválido. Use "AAAA-MM-DD".`);
+                return;
+            }
+
+            const novaAvaliacao = { 
+                analyst: analista, 
+                channel: canal, 
+                score: parseInt(nota, 10),
+                date: dataAvaliacao
+            };
+            
+            // Adiciona a nova nota ao nosso estado em memória
+            dadosPesquisaAtuais.push(novaAvaliacao);
+
+            // Re-renderiza o painel com os dados atualizados
+            atualizarPainel(dadosPesquisaAtuais);
+
+            console.log('Nota adicionada com sucesso:', novaAvaliacao);
+            console.log('Total de avaliações agora:', dadosPesquisaAtuais.length);
+        }
+
+        // --- Expor a função ao console ---
+        window.adicionarNota = adicionarNota;
+
+        // --- LÓGICA DE FILTROS ---
+
+        function aplicarFiltros() {
+            const selectedAnalyst = analystFilterEl.value;
+            const startDate = startDateFilterEl.value;
+            const endDate = endDateFilterEl.value;
+
+            let dadosFiltrados = [...dadosPesquisaAtuais];
+
+            // 1. Filtro por analista
+            if (selectedAnalyst) {
+                dadosFiltrados = dadosFiltrados.filter(d => d.analyst === selectedAnalyst);
+            }
+
+            // 2. Filtro por data de início
+            if (startDate) {
+                dadosFiltrados = dadosFiltrados.filter(d => d.date >= startDate);
+            }
+
+            // 3. Filtro por data de fim
+            if (endDate) {
+                dadosFiltrados = dadosFiltrados.filter(d => d.date <= endDate);
+            }
+
+            atualizarPainel(dadosFiltrados);
+        }
+
+        function limparFiltros() {
+            analystFilterEl.value = ''; // Seleciona a opção "Todos"
+            startDateFilterEl.value = '';
+            endDateFilterEl.value = '';
+            atualizarPainel(dadosPesquisaAtuais); // Volta para os dados completos
+        }
+
+        // --- INICIALIZAÇÃO ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // 1. Busca os dados da planilha
+                dadosPesquisaAtuais = await fetchDataFromSheet(googleSheetCsvUrl);
+                
+                // 2. Deriva a lista de analistas únicos a partir dos dados buscados
+                listaDeAnalistas = [...new Set(dadosPesquisaAtuais.map(item => item.analyst))].sort();
+
+                // 3. Preenche o dropdown de filtros de analistas
+                const allOption = document.createElement('option');
+                allOption.value = '';
+                allOption.textContent = 'Todos os Analistas';
+                analystFilterEl.appendChild(allOption);
+
+                listaDeAnalistas.forEach(analista => {
+                    const option = document.createElement('option');
+                    option.value = analista;
+                    option.textContent = analista;
+                    analystFilterEl.appendChild(option);
+                });
+
+                // 4. Adiciona eventos aos filtros
+                analystFilterEl.addEventListener('change', aplicarFiltros);
+                startDateFilterEl.addEventListener('change', aplicarFiltros);
+                endDateFilterEl.addEventListener('change', aplicarFiltros);
+                clearFiltersBtn.addEventListener('click', limparFiltros);
+
+                // 5. Renderiza o painel com os dados
+                atualizarPainel(dadosPesquisaAtuais);
+
+                console.log(`--- Placar NPS pronto! ${dadosPesquisaAtuais.length} avaliações carregadas do Google Sheet. ---`);
+
+            } catch (error) {
+                console.error("Falha na inicialização do painel:", error);
+            }
+        });
+    </script>
+</body>
+</html>
