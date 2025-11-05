@@ -192,13 +192,32 @@
                 throw new Error("O CSV não contém os cabeçalhos esperados: 'analyst', 'channel', 'score', 'date'.");
             }
 
+            /**
+             * Tenta converter uma data de DD/MM/AAAA para AAAA-MM-DD.
+             * Se já estiver no formato correto ou for inválida, retorna como está.
+             * @param {string} dateStr A string da data.
+             * @returns {string} A data no formato AAAA-MM-DD.
+             */
+            function normalizeDate(dateStr) {
+                if (!dateStr) return '';
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                    return dateStr; // Já está no formato correto
+                }
+                const parts = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                if (parts) {
+                    // Padrão DD/MM/AAAA -> AAAA-MM-DD
+                    return `${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                }
+                return dateStr; // Retorna original se não reconhecer o formato
+            }
+
             return lines.map(line => {
                 const values = line.split(',');
                 return {
                     analyst: values[headerMap.analyst]?.trim(),
                     channel: values[headerMap.channel]?.trim(),
                     score: parseInt(values[headerMap.score]?.trim(), 10),
-                    date: values[headerMap.date]?.trim(),
+                    date: normalizeDate(values[headerMap.date]?.trim()),
                 };
             }).filter(item => item.analyst && !isNaN(item.score)); // Filtra linhas vazias ou inválidas
         }
