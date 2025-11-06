@@ -398,10 +398,10 @@
                 const isBestChat = bestChat.analysts.includes(analista);
 
                 const telefoniaWarning = notasTelefoniaAnalista.length > 0 && notasTelefoniaAnalista.length < MIN_EVALS_TELEFONIA
-                    ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_TELEFONIA} avaliações necessárias para um resultado confiável.">⚠️</span>` : '';
+                    ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_TELEFONIA} avaliações.">⚠️</span>` : '';
                 
                 const chatWarning = notasChatAnalista.length > 0 && notasChatAnalista.length < MIN_EVALS_CHAT
-                    ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_CHAT} avaliações necessárias para um resultado confiável.">⚠️</span>` : '';
+                    ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_CHAT} avaliações.">⚠️</span>` : '';
 
                 // --- Cria o card do analista (Layout Atualizado) ---
                 const cardHTML = `
