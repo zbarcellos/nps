@@ -331,6 +331,41 @@
             npsChatEl.className = `nps-score ${getCorNPS(npsChat)}`;
             npsChatCountEl.textContent = `(${notasChat.length} avaliações)`;
 
+            // 4.a Encontrar os melhores desempenhos (que atendem ao mínimo de avaliações)
+            const MIN_EVALS_TELEFONIA = 10;
+            const MIN_EVALS_CHAT = 15;
+
+            let bestTelefonia = { nps: -101, analysts: [] };
+            let bestChat = { nps: -101, analysts: [] };
+
+            listaDeAnalistas.forEach(analista => {
+                const notasTelefoniaAnalista = dadosPesquisa
+                    .filter(d => d.analyst === analista && d.channel === 'Telefonia')
+                    .map(d => d.score);
+
+                if (notasTelefoniaAnalista.length >= MIN_EVALS_TELEFONIA) {
+                    const nps = calcularNPS(notasTelefoniaAnalista);
+                    if (nps > bestTelefonia.nps) {
+                        bestTelefonia = { nps, analysts: [analista] };
+                    } else if (nps === bestTelefonia.nps) {
+                        bestTelefonia.analysts.push(analista);
+                    }
+                }
+
+                const notasChatAnalista = dadosPesquisa
+                    .filter(d => d.analyst === analista && d.channel === 'Chat')
+                    .map(d => d.score);
+
+                if (notasChatAnalista.length >= MIN_EVALS_CHAT) {
+                    const nps = calcularNPS(notasChatAnalista);
+                    if (nps > bestChat.nps) {
+                        bestChat = { nps, analysts: [analista] };
+                    } else if (nps === bestChat.nps) {
+                        bestChat.analysts.push(analista);
+                    }
+                }
+            });
+
             // 4. Calcular NPS por Analista
             analystListEl.innerHTML = ''; // Limpa a lista atual
             listaDeAnalistas.forEach(analista => {
@@ -358,6 +393,15 @@
                 const npsChatAnalista = calcularNPS(notasChatAnalista);
                 const corChatAnalista = getCorNPS(npsChatAnalista);
 
+                // --- Verificações para destaques e avisos ---
+                const isBestTelefonia = bestTelefonia.analysts.includes(analista);
+                const isBestChat = bestChat.analysts.includes(analista);
+
+                const telefoniaWarning = notasTelefoniaAnalista.length > 0 && notasTelefoniaAnalista.length < MIN_EVALS_TELEFONIA
+                    ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_TELEFONIA} avaliações necessárias para um resultado confiável.">⚠️</span>` : '';
+                
+                const chatWarning = notasChatAnalista.length > 0 && notasChatAnalista.length < MIN_EVALS_CHAT
+                    ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_CHAT} avaliações necessárias para um resultado confiável.">⚠️</span>` : '';
 
                 // --- Cria o card do analista (Layout Atualizado) ---
                 const cardHTML = `
@@ -374,12 +418,12 @@
 
                         <!-- Notas por Canal --><div class="grid grid-cols-2 gap-4 mb-4">
                             <div class="text-center">
-                                <span class="text-2xl font-bold ${corTelefoniaAnalista}">${npsTelefoniaAnalista}</span>
-                                <p class="text-sm text-[#a2a3bb]">Telefonia (${notasTelefoniaAnalista.length})</p>
+                                <span class="text-2xl font-bold ${corTelefoniaAnalista}">${npsTelefoniaAnalista} ${isBestTelefonia ? '🏆' : ''}</span>
+                                <p class="text-sm text-[#a2a3bb]">Telefonia (${notasTelefoniaAnalista.length}) ${telefoniaWarning}</p>
                             </div>
                             <div class="text-center">
-                                <span class="text-2xl font-bold ${corChatAnalista}">${npsChatAnalista}</span>
-                                <p class="text-sm text-[#a2a3bb]">Chat (${notasChatAnalista.length})</p>
+                                <span class="text-2xl font-bold ${corChatAnalista}">${npsChatAnalista} ${isBestChat ? '🏆' : ''}</span>
+                                <p class="text-sm text-[#a2a3bb]">Chat (${notasChatAnalista.length}) ${chatWarning}</p>
                             </div>
                         </div>
 
