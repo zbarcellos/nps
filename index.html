@@ -567,29 +567,33 @@
 
             let dadosFiltrados = [...dadosPesquisaAtuais];
 
-            // 1. Filtro por analista
-            if (selectedAnalyst) {
-                dadosFiltrados = dadosFiltrados.filter(d => d.analyst === selectedAnalyst);
-            }
-
-            // 2. Filtro por data de início
+            // 1. Filtro por data de início
             if (startDate) {
                 dadosFiltrados = dadosFiltrados.filter(d => d.date >= startDate);
             }
 
-            // 3. Filtro por data de fim
+            // 2. Filtro por data de fim
             if (endDate) {
                 dadosFiltrados = dadosFiltrados.filter(d => d.date <= endDate);
             }
 
-            // 4. Filtro de "jogadores válidos"
+            // 3. Filtro de "jogadores válidos"
+            // Este filtro deve ser aplicado antes do filtro de analista individual
+            // para garantir que a contagem de avaliações seja feita no conjunto de dados correto.
             if (onlyValidPlayers) {
+                // Usamos 'dadosFiltrados' (que já tem o range de data) para determinar quem é válido.
                 const validAnalysts = new Set(listaDeAnalistas.filter(analista => {
                     const telefoniaCount = dadosFiltrados.filter(d => d.analyst === analista && d.channel === 'Telefonia').length;
                     const chatCount = dadosFiltrados.filter(d => d.analyst === analista && d.channel === 'Chat').length;
-                    return telefoniaCount >= MIN_EVALS_TELEFONIA || chatCount >= MIN_EVALS_CHAT;
+                    // Acessando as constantes globais definidas na função atualizarPainel
+                    return telefoniaCount >= 10 || chatCount >= 15; // MIN_EVALS_TELEFONIA e MIN_EVALS_CHAT
                 }));
                 dadosFiltrados = dadosFiltrados.filter(d => validAnalysts.has(d.analyst));
+            }
+
+            // 4. Filtro por analista (aplicado por último)
+            if (selectedAnalyst) {
+                dadosFiltrados = dadosFiltrados.filter(d => d.analyst === selectedAnalyst);
             }
 
             atualizarPainel(dadosFiltrados);
