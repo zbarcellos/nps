@@ -74,12 +74,18 @@
 
         <!-- Seção de Filtros --><section class="card-bg p-6 rounded-2xl shadow-lg mb-8 border border-[#415a77]">
             <h2 class="text-2xl font-bold text-[#6fffe9] mb-4">Filtros</h2>
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
                 <div class="md:col-span-2">
                     <label for="analyst-filter" class="block text-sm font-medium text-[#a2a3bb] mb-1">Filtrar por Analista</label>
                     <select id="analyst-filter" class="w-full p-2.5 rounded-md bg-[#0d1b2a] border border-[#415a77] focus:ring-2 focus:ring-[#6fffe9] focus:outline-none">
                         <!-- Opções de analistas serão inseridas aqui -->
                     </select>
+                </div>
+                <div class="flex items-center justify-center h-full pb-1">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="valid-players-filter" class="form-checkbox h-5 w-5 rounded bg-[#0d1b2a] border-[#415a77] text-[#6fffe9] focus:ring-2 focus:ring-offset-0 focus:ring-offset-[#1b263b] focus:ring-[#6fffe9]">
+                        <span class="text-sm font-medium text-[#a2a3bb]">Apenas jogadores válidos</span>
+                    </label>
                 </div>
                 <div>
                     <label for="start-date-filter" class="block text-sm font-medium text-[#a2a3bb] mb-1">Data de Início</label>
@@ -112,7 +118,21 @@
         </section>
 
         <!-- Seção de NPS por Analista --><section class="card-bg p-6 rounded-2xl shadow-lg mb-8 border border-[#415a77]">
-            <h2 class="text-2xl font-bold text-[#6fffe9] mb-6">Desempenho por Analista</h2>
+            <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-[#6fffe9]">Desempenho por Analista</h2>
+                <div class="flex items-center gap-2">
+                    <label for="sort-analyst-by" class="text-sm font-medium text-[#a2a3bb] whitespace-nowrap">Ordenar por:</label>
+                    <select id="sort-analyst-by" class="p-2 rounded-md bg-[#0d1b2a] border border-[#415a77] focus:ring-2 focus:ring-[#6fffe9] focus:outline-none text-sm">
+                        <option value="nome-asc">Nome (A-Z)</option>
+                        <option value="nps-geral-desc" selected>NPS Geral (Maior)</option>
+                        <option value="nps-telefonia-desc">NPS Telefonia (Maior)</option>
+                        <option value="nps-chat-desc">NPS Chat (Maior)</option>
+                        <option value="total-respostas-desc">Total de Respostas</option>
+                        <option value="telefonia-respostas-desc">Respostas Telefonia</option>
+                        <option value="chat-respostas-desc">Respostas Chat</option>
+                    </select>
+                </div>
+            </div>
             <div id="analyst-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                 <!-- Cards de analistas serão inseridos aqui pelo JavaScript --></div>
         </section>
@@ -144,6 +164,8 @@
         const startDateFilterEl = document.getElementById('start-date-filter');
         const endDateFilterEl = document.getElementById('end-date-filter');
         const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        const sortAnalystByEl = document.getElementById('sort-analyst-by');
+        const validPlayersFilterEl = document.getElementById('valid-players-filter');
 
 
         // --- FUNÇÕES DE CÁLCULO ---
@@ -366,41 +388,77 @@
                 }
             });
 
-            // 4. Calcular NPS por Analista
-            analystListEl.innerHTML = ''; // Limpa a lista atual
-            listaDeAnalistas.forEach(analista => {
-                
+            // 4.b Pré-calcular dados para cada analista para ordenação
+            const analistasComDados = listaDeAnalistas.map(analista => {
                 // --- Cálculos Gerais do Analista ---
                 const notasAnalista = dadosPesquisa
                     .filter(d => d.analyst === analista)
                     .map(d => d.score);
-                const npsAnalista = calcularNPS(notasAnalista);
-                const corAnalista = getCorNPS(npsAnalista);
-                const promotores = notasAnalista.filter(s => s >= 9).length;
-                const passivos = notasAnalista.filter(s => s >= 7 && s <= 8).length;
-                const detratores = notasAnalista.filter(s => s <= 6).length;
 
                 // --- Cálculos Específicos por Canal ---
                 const notasTelefoniaAnalista = dadosPesquisa
                     .filter(d => d.analyst === analista && d.channel === 'Telefonia')
                     .map(d => d.score);
                 const npsTelefoniaAnalista = calcularNPS(notasTelefoniaAnalista);
-                const corTelefoniaAnalista = getCorNPS(npsTelefoniaAnalista);
 
                 const notasChatAnalista = dadosPesquisa
                     .filter(d => d.analyst === analista && d.channel === 'Chat')
                     .map(d => d.score);
                 const npsChatAnalista = calcularNPS(notasChatAnalista);
+
+                return {
+                    nome: analista,
+                    npsGeral: calcularNPS(notasAnalista),
+                    totalRespostas: notasAnalista.length,
+                    promotores: notasAnalista.filter(s => s >= 9).length,
+                    passivos: notasAnalista.filter(s => s >= 7 && s <= 8).length,
+                    detratores: notasAnalista.filter(s => s <= 6).length,
+                    npsTelefonia: npsTelefoniaAnalista,
+                    respostasTelefonia: notasTelefoniaAnalista.length,
+                    npsChat: npsChatAnalista,
+                    respostasChat: notasChatAnalista.length,
+                };
+            });
+
+            // 4.c Ordenar a lista de analistas
+            const sortValue = sortAnalystByEl.value;
+            analistasComDados.sort((a, b) => {
+                switch (sortValue) {
+                    case 'nps-geral-desc':
+                        return b.npsGeral - a.npsGeral;
+                    case 'nps-telefonia-desc':
+                        return b.npsTelefonia - a.npsTelefonia;
+                    case 'nps-chat-desc':
+                        return b.npsChat - a.npsChat;
+                    case 'total-respostas-desc':
+                        return b.totalRespostas - a.totalRespostas;
+                    case 'telefonia-respostas-desc':
+                        return b.respostasTelefonia - a.respostasTelefonia;
+                    case 'chat-respostas-desc':
+                        return b.respostasChat - a.respostasChat;
+                    case 'nome-asc':
+                    default:
+                        return a.nome.localeCompare(b.nome);
+                }
+            });
+
+            // 4.d Renderizar os cards dos analistas
+            analystListEl.innerHTML = ''; // Limpa a lista atual
+            analistasComDados.forEach(data => {
+                const { nome, npsGeral, totalRespostas, promotores, passivos, detratores, npsTelefonia, respostasTelefonia, npsChat, respostasChat } = data;
+
+                const corAnalista = getCorNPS(npsGeral);
+                const corTelefoniaAnalista = getCorNPS(npsTelefonia);
                 const corChatAnalista = getCorNPS(npsChatAnalista);
 
                 // --- Verificações para destaques e avisos ---
-                const isBestTelefonia = bestTelefonia.analysts.includes(analista);
-                const isBestChat = bestChat.analysts.includes(analista);
+                const isBestTelefonia = bestTelefonia.analysts.includes(nome);
+                const isBestChat = bestChat.analysts.includes(nome);
 
-                const telefoniaWarning = notasTelefoniaAnalista.length > 0 && notasTelefoniaAnalista.length < MIN_EVALS_TELEFONIA
+                const telefoniaWarning = respostasTelefonia > 0 && respostasTelefonia < MIN_EVALS_TELEFONIA
                     ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_TELEFONIA} avaliações.">⚠️</span>` : '';
                 
-                const chatWarning = notasChatAnalista.length > 0 && notasChatAnalista.length < MIN_EVALS_CHAT
+                const chatWarning = respostasChat > 0 && respostasChat < MIN_EVALS_CHAT
                     ? `<span class="text-yellow-400" title="Mínimo de ${MIN_EVALS_CHAT} avaliações.">⚠️</span>` : '';
 
                 // --- Cria o card do analista (Layout Atualizado) ---
@@ -408,9 +466,10 @@
                     <div class="card-bg border border-[#415a77] rounded-lg p-5 shadow-sm transition-all hover:shadow-md flex flex-col">
                         <!-- Cabeçalho com Nome e NPS Geral --><div class="flex justify-between items-center mb-3">
                             <h3 class="text-xl font-semibold text-[#6fffe9]">${analista}</h3>
+                            <h3 class="text-xl font-semibold text-[#6fffe9]">${nome}</h3>
                             <div class="text-right">
-                                <span class="text-3xl font-bold ${corAnalista}">${npsAnalista}</span>
-                                <p class="text-sm text-[#a2a3bb]">Geral (${notasAnalista.length})</p>
+                                <span class="text-3xl font-bold ${corAnalista}">${npsGeral}</span>
+                                <p class="text-sm text-[#a2a3bb]">Geral (${totalRespostas})</p>
                             </div>
                         </div>
                         
@@ -418,12 +477,12 @@
 
                         <!-- Notas por Canal --><div class="grid grid-cols-2 gap-4 mb-4">
                             <div class="text-center">
-                                <span class="text-2xl font-bold ${corTelefoniaAnalista}">${npsTelefoniaAnalista} ${isBestTelefonia ? '🏆' : ''}</span>
-                                <p class="text-sm text-[#a2a3bb]">Telefonia (${notasTelefoniaAnalista.length}) ${telefoniaWarning}</p>
+                                <span class="text-2xl font-bold ${corTelefoniaAnalista}">${npsTelefonia} ${isBestTelefonia ? '🏆' : ''}</span>
+                                <p class="text-sm text-[#a2a3bb]">Telefonia (${respostasTelefonia}) ${telefoniaWarning}</p>
                             </div>
                             <div class="text-center">
-                                <span class="text-2xl font-bold ${corChatAnalista}">${npsChatAnalista} ${isBestChat ? '🏆' : ''}</span>
-                                <p class="text-sm text-[#a2a3bb]">Chat (${notasChatAnalista.length}) ${chatWarning}</p>
+                                <span class="text-2xl font-bold ${corChatAnalista}">${npsChat} ${isBestChat ? '🏆' : ''}</span>
+                                <p class="text-sm text-[#a2a3bb]">Chat (${respostasChat}) ${chatWarning}</p>
                             </div>
                         </div>
 
@@ -505,6 +564,7 @@
             const selectedAnalyst = analystFilterEl.value;
             const startDate = startDateFilterEl.value;
             const endDate = endDateFilterEl.value;
+            const onlyValidPlayers = validPlayersFilterEl.checked;
 
             let dadosFiltrados = [...dadosPesquisaAtuais];
 
@@ -523,6 +583,16 @@
                 dadosFiltrados = dadosFiltrados.filter(d => d.date <= endDate);
             }
 
+            // 4. Filtro de "jogadores válidos"
+            if (onlyValidPlayers) {
+                const validAnalysts = new Set(listaDeAnalistas.filter(analista => {
+                    const telefoniaCount = dadosFiltrados.filter(d => d.analyst === analista && d.channel === 'Telefonia').length;
+                    const chatCount = dadosFiltrados.filter(d => d.analyst === analista && d.channel === 'Chat').length;
+                    return telefoniaCount >= MIN_EVALS_TELEFONIA || chatCount >= MIN_EVALS_CHAT;
+                }));
+                dadosFiltrados = dadosFiltrados.filter(d => validAnalysts.has(d.analyst));
+            }
+
             atualizarPainel(dadosFiltrados);
         }
 
@@ -530,6 +600,8 @@
             analystFilterEl.value = ''; // Seleciona a opção "Todos"
             startDateFilterEl.value = '';
             endDateFilterEl.value = '';
+            validPlayersFilterEl.checked = false;
+            sortAnalystByEl.value = 'nps-geral-desc'; // Reset sort order
             atualizarPainel(dadosPesquisaAtuais); // Volta para os dados completos
         }
 
