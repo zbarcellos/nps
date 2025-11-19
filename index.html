@@ -465,7 +465,6 @@
                 const cardHTML = `
                     <div class="card-bg border border-[#415a77] rounded-lg p-5 shadow-sm transition-all hover:shadow-md flex flex-col">
                         <!-- Cabeçalho com Nome e NPS Geral --><div class="flex justify-between items-center mb-3">
-                            <h3 class="text-xl font-semibold text-[#6fffe9]">${analista}</h3>
                             <h3 class="text-xl font-semibold text-[#6fffe9]">${nome}</h3>
                             <div class="text-right">
                                 <span class="text-3xl font-bold ${corAnalista}">${npsGeral}</span>
@@ -631,6 +630,8 @@
                 analystFilterEl.addEventListener('change', aplicarFiltros);
                 startDateFilterEl.addEventListener('change', aplicarFiltros);
                 endDateFilterEl.addEventListener('change', aplicarFiltros);
+                validPlayersFilterEl.addEventListener('change', aplicarFiltros);
+                sortAnalystByEl.addEventListener('change', aplicarFiltros);
                 clearFiltersBtn.addEventListener('click', limparFiltros);
 
                 // 5. Renderiza o painel com os dados
