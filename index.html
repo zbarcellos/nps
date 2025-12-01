@@ -61,6 +61,21 @@
 </head>
 <body class="p-4 md:p-8">
 
+    <!-- Modal de Ganhador (inicialmente oculto) -->
+    <div id="winner-modal-overlay" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden z-50 transition-opacity duration-300">
+        <div id="winner-modal-content" class="bg-[#1b263b] border-2 border-[#6fffe9] p-8 rounded-2xl shadow-2xl text-center relative transform scale-95 transition-transform duration-300 w-11/12 max-w-md">
+            <button id="close-winner-modal" class="absolute top-3 right-4 text-gray-400 hover:text-white text-3xl font-bold">&times;</button>
+            
+            <h2 class="text-3xl font-bold text-yellow-300 mb-2">🏆 Ganhador do Período! 🏆</h2>
+            <p id="winner-modal-channel" class="text-lg text-[#a2a3bb] mb-6">no canal Telefonia</p>
+            
+            <div class="my-4">
+                <p class="text-5xl font-extrabold text-[#6fffe9] break-words" id="winner-modal-name">Nome do Analista</p>
+            </div>
+            <p class="text-sm text-[#a2a3bb] mt-6">Parabéns pelo excelente desempenho!</p>
+        </div>
+    </div>
+
     <div class="max-w-7xl mx-auto">
         <header class="mb-12 text-center md:text-left">
             <h1 class="text-5xl font-extrabold text-[#6fffe9] mb-2">Missão: Excelência no Atendimento</h1>
@@ -194,6 +209,11 @@
         const validPlayersFilterEl = document.getElementById('valid-players-filter');
         const revealTelefoniaBtn = document.getElementById('reveal-telefonia-winner');
         const revealChatBtn = document.getElementById('reveal-chat-winner');
+        const winnerModalOverlay = document.getElementById('winner-modal-overlay');
+        const winnerModalContent = document.getElementById('winner-modal-content');
+        const closeWinnerModalBtn = document.getElementById('close-winner-modal');
+        const winnerModalName = document.getElementById('winner-modal-name');
+        const winnerModalChannel = document.getElementById('winner-modal-channel');
 
 
         // --- FUNÇÕES DE CÁLCULO ---
@@ -589,6 +609,30 @@
         // --- Expor a função ao console ---
         window.adicionarNota = adicionarNota;
 
+        // --- FUNÇÕES DO MODAL ---
+
+        /**
+         * Abre o modal de ganhador com as informações corretas.
+         * @param {string} nome - Nome do analista ganhador.
+         * @param {string} tipo - 'Telefonia' ou 'Chat'.
+         */
+        function abrirModalGanhador(nome, tipo) {
+            winnerModalName.textContent = nome;
+            winnerModalChannel.textContent = `no canal ${tipo}`;
+            
+            winnerModalOverlay.classList.remove('hidden');
+            setTimeout(() => {
+                winnerModalOverlay.classList.add('opacity-100');
+                winnerModalContent.classList.add('scale-100');
+            }, 10); // Pequeno delay para a transição funcionar
+        }
+
+        function fecharModalGanhador() {
+            winnerModalOverlay.classList.remove('opacity-100');
+            winnerModalContent.classList.remove('scale-100');
+            setTimeout(() => winnerModalOverlay.classList.add('hidden'), 300); // Espera a transição terminar
+        }
+
         // --- FUNÇÕES DE DESTAQUE E ANIMAÇÃO ---
 
         /**
@@ -596,8 +640,8 @@
          */
         function celebrarVitoria() {
             const duration = 5 * 1000;
-            const animationEnd = Date.now() + duration;
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+            const animationEnd = Date.now() + duration; // zIndex 51 para ficar acima do overlay mas abaixo do modal
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 51 };
 
             function randomInRange(min, max) {
                 return Math.random() * (max - min) + min;
@@ -632,16 +676,18 @@
 
             if (cardGanhador) {
                 // Rola a página até o card
-                cardGanhador.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                cardGanhador.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 
-                // Adiciona a classe de destaque após um pequeno atraso para a rolagem começar
+                // Adiciona a classe de destaque e abre o modal
                 setTimeout(() => {
                     cardGanhador.classList.add('winner-highlight');
+                    abrirModalGanhador(nomeAnalista, tipo);
                     celebrarVitoria();
                 }, 300);
             } else {
                 alert(`O card para o ganhador "${nomeAnalista}" não foi encontrado. Ele pode ter sido removido pelos filtros.`);
             }
+
         }
 
         // --- LÓGICA DE FILTROS ---
@@ -726,6 +772,15 @@
                 clearFiltersBtn.addEventListener('click', limparFiltros);
                 revealTelefoniaBtn.addEventListener('click', () => revelarGanhador(ganhadorTelefonia, 'Telefonia'));
                 revealChatBtn.addEventListener('click', () => revelarGanhador(ganhadorChat, 'Chat'));
+                
+                // Eventos para fechar o modal
+                closeWinnerModalBtn.addEventListener('click', fecharModalGanhador);
+                winnerModalOverlay.addEventListener('click', (e) => {
+                    if (e.target === winnerModalOverlay) fecharModalGanhador();
+                });
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === "Escape" && !winnerModalOverlay.classList.contains('hidden')) fecharModalGanhador();
+                });
 
                 // 5. Renderiza o painel com os dados
                 atualizarPainel(dadosPesquisaAtuais);
